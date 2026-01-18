@@ -1,1 +1,1 @@
-# my-obp-bank-rabit-cats-compatible-adapter
+# my-obp-bank-rabbit-cats-compatible-adapter
