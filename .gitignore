@@ -1,0 +1,14 @@
+# Build output
+target/
+
+# Maven generated files
+dependency-reduced-pom.xml
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.bsp/
+
+# OS files
+.DS_Store
