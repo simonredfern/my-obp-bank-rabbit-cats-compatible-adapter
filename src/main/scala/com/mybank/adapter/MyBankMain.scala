@@ -71,7 +71,7 @@ object MyBankMain extends IOApp {
       healthResult <- localAdapter.checkHealth(
         com.tesobe.obp.adapter.models.CallContext(
           correlationId = "startup-health-check",
-          sessionId = "startup",
+          sessionId = Some("startup"),
           userId = None,
           username = None,
           consumerId = None,
