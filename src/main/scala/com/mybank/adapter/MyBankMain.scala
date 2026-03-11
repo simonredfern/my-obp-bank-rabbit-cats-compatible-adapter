@@ -10,6 +10,9 @@ package com.mybank.adapter
 
 import cats.effect.{ExitCode, IO, IOApp}
 import com.tesobe.obp.adapter.config.Config
+
+import scala.io.Source
+import scala.util.{Try, Using}
 import com.tesobe.obp.adapter.http.DiscoveryServer
 import com.tesobe.obp.adapter.messaging.{
   RabbitMQClient,
@@ -19,6 +22,29 @@ import com.tesobe.obp.adapter.messaging.{
 import com.tesobe.obp.adapter.telemetry.ConsoleTelemetry
 
 object MyBankMain extends IOApp {
+
+  /** Load a .env file and set entries as system properties for any key not
+    * already present in the process environment. Env vars always win. */
+  private def loadDotEnv(path: String = ".env"): Unit = {
+    val file = new java.io.File(path)
+    if (file.exists()) {
+      Using(Source.fromFile(file)) { src =>
+        src.getLines()
+          .map(_.trim)
+          .filterNot(line => line.isEmpty || line.startsWith("#"))
+          .foreach { line =>
+            val idx = line.indexOf('=')
+            if (idx > 0) {
+              val key   = line.substring(0, idx).trim
+              val value = line.substring(idx + 1).trim
+              // Env var takes precedence over .env file
+              if (!sys.env.contains(key))
+                System.setProperty(key, value)
+            }
+          }
+      }.recover { case e => System.err.println(s"[WARN] Could not read $path: ${e.getMessage}") }
+    }
+  }
 
   def run(args: List[String]): IO[ExitCode] = {
     val banner =
@@ -33,7 +59,8 @@ object MyBankMain extends IOApp {
     for {
       _ <- IO.println(banner)
 
-      // Load configuration
+      // Load .env file (env vars set on command line always take precedence)
+      _ <- IO(loadDotEnv())
       _ <- IO.println("[CONFIG] Loading configuration...")
       config <- Config.load
       _ <- IO.println(s"[OK] Configuration loaded")
@@ -71,7 +98,7 @@ object MyBankMain extends IOApp {
       healthResult <- localAdapter.checkHealth(
         com.tesobe.obp.adapter.models.CallContext(
           correlationId = "startup-health-check",
-          sessionId = "startup",
+          sessionId = Some("startup"),
           userId = None,
           username = None,
           consumerId = None,
